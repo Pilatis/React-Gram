@@ -14,9 +14,9 @@ const generateToken = (id) => {
 const registerUser = async (req, res) => {
     const { name, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
-    if (existingUser) {
+    if (user) {
         res.status(422).json({
             erros: [
                 "Este e-mail já está cadastrado. Por favor, utilize outro e-mail",
@@ -51,8 +51,28 @@ const registerUser = async (req, res) => {
     });
 };
 
-const loginUser = (req, res) => {
-    res.send("Login")
+const loginUser = async (req, res) => {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(404).json({ errors: ["Usuário não encontrado."] });
+
+        return;
+    }
+
+    if (!(await bcrypt.compare(password, user.password))) {
+       res.status(422).json({ erros: ["Senha inválida"] })
+
+       return
+    }
+
+    res.status(201).json({
+        _id: user._id,
+        profileImage: user.profileImage,
+        token: generateToken(user._id)
+    })
 }
 
 module.exports = { registerUser, loginUser };
